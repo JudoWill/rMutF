@@ -49,10 +49,58 @@ def convert_pmids_to_pmcs(ifiles, ofile):
             for idstr in sorted(new_ids):
                 handle.write(idstr + '\n')
 
+@ruffus.follows(convert_pmids_to_pmcs)
+@ruffus.files(partial(RunUtils.FileIter, 'download_pmids'))
+def download_pmids(ifile, ofile, odir):
+    
+   
+    needed_pmids = set()
+    with open(ifile) as handle:
+        for line in handle:
+            if not line.startswith('PMC'):
+                needed_pmids.add(line.strip())
+
+    present_pmids = set()
+    for f in os.listdir(odir):
+        if f.endswith('.xml') and not f.startswith('PMC'):
+            present_pmids.add(f.split('.')[0])
+
+    name_fun = partial(os.path.join, odir)
+    needed_pmids -= present_pmids
+    for xml, pmid in PubmedUtils.GetXMLfromList(needed_pmids, db = 'pubmed'):
+        with open(name_fun(pmid+'.xml'), 'w') as handle:
+            handle.write(xml)
+
+    GeneralUtils.touch(ofile)
+
+@ruffus.follows(convert_pmids_to_pmcs)
+@ruffus.files(partial(RunUtils.FileIter, 'download_pmc'))
+def download_pmc(ifile, ofile, odir):
+    
+   
+    needed_pmids = set()
+    with open(ifile) as handle:
+        for line in handle:
+            if line.startswith('PMC'):
+                needed_pmids.add(line.strip())
+
+    present_pmids = set()
+    for f in os.listdir(odir):
+        if f.endswith('.xml') and f.startswith('PMC'):
+            present_pmids.add(f.split('.')[0])
+
+    name_fun = partial(os.path.join, odir)
+    needed_pmids -= present_pmids
+    for xml, pmid in PubmedUtils.GetXMLfromList(needed_pmids, db = 'pmc'):
+        with open(name_fun(pmid+'.xml'), 'w') as handle:
+            handle.write(xml)
+
+    GeneralUtils.touch(ofile)
 
 
 
-@ruffus.follows(search_pubmed, get_PMCList, convert_pmids_to_pmcs)
+
+@ruffus.follows(download_pmc, download_pmids)
 def top_function():
     pass
 

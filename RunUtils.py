@@ -23,4 +23,16 @@ def FileIter(func_name):
                 ofile = sdir(fname)
                 yield queryfile, ofile, row['search']
 
+    elif func_name == 'download_pmids' or func_name == 'download_pmc':
+        
+        ext = func_name.split('_')[-1]
+        sdir = partial(os.path.join,'Data', 'SearchResults')
+        odir = os.path.join('Data', 'RawXML')
+        files = [x for x in os.listdir(sdir('')) if x.endswith('.conv')]
+        
+        for f in files:
+            yield sdir(f), sdir(f+'.dl'+ext), odir
+
+        
+        
 

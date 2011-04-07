@@ -10,14 +10,12 @@ class TimedSemaphore():
         self.time = timer
 
     def release(self):
-        print 'releasing'
         self.sem.release()
 
     def acquire(self):
         self.sem.acquire()
 
     def __enter__(self):
-        print 'waiting'
         self.acquire()
 
     def __exit__(self, typ, value, traceback):
