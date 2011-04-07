@@ -8,6 +8,8 @@ from BeautifulSoup import BeautifulStoneSoup
 from itertools import islice
 from GeneralUtils import TimedSemaphore, pushd
 from subprocess import check_call
+from nltk.tokenize import sent_tokenize
+from mutation_finder import mutation_finder_from_regex_filepath as mutfinder_gen
 
 def take(NUM, iterable):
     return list(islice(iterable, NUM))
@@ -111,16 +113,17 @@ def SearchPUBMED(search_sent, recent_date = None, BLOCK_SIZE = 100000, START = 0
         return id_nums
 
 
+
 def ExtractPMCPar(xmldata):
     """Yields sucessive paragraphs from a PMC xml"""
 
     xmltree = BeautifulStoneSoup(xmldata)
     for par in xmltree.findAll('p'):
-        buffer = ''
+        buf = ''
         for item in par.findAll(text=True):
-            buffer += item.string.strip()
+            buf += item.string.strip()
 
-        yield buffer
+        yield buf
 
 
 def ExtractPubPar(xmldata):

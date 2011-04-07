@@ -97,10 +97,24 @@ def download_pmc(ifile, ofile, odir):
 
     GeneralUtils.touch(ofile)
 
-
-
-
 @ruffus.follows(download_pmc, download_pmids)
+@ruffus.files(partial(RunUtils.FileIter, 'extract_text'))
+def extract_text(ifile, ofile, typ):
+    
+    if typ == 'pmc':
+        iterable = PubmedUtils.ExtractPMCPar(open(ifile).read())
+    elif typ == 'pubmed':
+        iterable = PubmedUtils.ExtractPubPar(open(ifile).read())
+
+    with open(ofile, 'w') as handle:
+        for ind, par in enumerate(iterable):
+            handle.write('%i\t%s\n' % (ind, par))
+        
+
+
+
+
+@ruffus.follows(extract_text)
 def top_function():
     pass
 

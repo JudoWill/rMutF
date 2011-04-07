@@ -33,6 +33,20 @@ def FileIter(func_name):
         for f in files:
             yield sdir(f), sdir(f+'.dl'+ext), odir
 
+    elif func_name == 'extract_text':
+        
+        sdir = partial(os.path.join, 'Data', 'RawXML')
+        odir = partial(os.path.join, 'Data', 'SentenceFiles')
+
+        files = [x for x in os.listdir(sdir('')) if x.endswith('.xml')]
+        for f in files:
+            name = f.split('.')[0]
+            if f.startswith('PMC'):
+                typ = 'pmc'
+            else:
+                typ = 'pubmed'
+
+            yield sdir(f), odir(name+'.sent'), typ
         
         
 
