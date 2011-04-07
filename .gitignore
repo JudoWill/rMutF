@@ -1,0 +1,12 @@
+*.pyc
+*.sen
+ve/*
+installfiles
+*~
+nohup.out
+logs/*
+*Data/*
+*Seqs/*
+*quick*
+*Quick*
+*test*
