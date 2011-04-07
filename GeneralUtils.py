@@ -45,3 +45,16 @@ def slugify(value):
     value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore')
     value = unicode(_slugify_strip_re.sub('', value).strip().lower())
     return _slugify_hyphenate_re.sub('-', value)
+
+class pushd():
+    """Chnages a directory and then changes back when leaving the context."""
+
+    def __init__(self, newpath):
+        self.prev_path = os.getcwd()
+        self.new_path = newpath        
+
+    def __enter__(self):
+        os.chdir(self.new_path)
+    def __exit__(self, typ, value, tb):
+        os.chdir(self.prev_path)        
+
