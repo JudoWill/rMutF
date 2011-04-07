@@ -1,10 +1,13 @@
 import sys
+import os.path
+import shlex
 from ensure_ascii import unicode_to_ascii
 import re, urllib2
 from datetime import datetime
 from BeautifulSoup import BeautifulStoneSoup
 from itertools import islice
-from GeneralUtils import TimedSemaphore
+from GeneralUtils import TimedSemaphore, pushd
+from subprocess import check_call
 
 def take(NUM, iterable):
     return list(islice(iterable, NUM))
@@ -129,9 +132,15 @@ def ExtractPubPar(xmldata):
         yield v.string.strip()
 
 
+def get_pmc_list(path):
+    """Retrieves the PMC id list and unzips it to the specified path"""
 
-
-
+    
+    with pushd(path):
+        cmd = shlex.split('wget ftp://ftp.ncbi.nlm.nih.gov/pub/pmc/PMC-ids.csv.gz')
+        check_call(cmd)
+        cmd = shlex.split('gzip -d PMC-ids.csv.gz')
+        check_call(cmd)
 
 
 
