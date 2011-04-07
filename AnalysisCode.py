@@ -3,7 +3,7 @@ import ruffus
 from functools import partial
 import GeneralUtils
 import PubmedUtils
-
+import RunUtils
 
 
 
@@ -28,6 +28,35 @@ def search_pubmed(ifile, ofile):
 def get_PMCList(ifile, ofile):
     
     PubmedUtils.get_pmc_list('Data')
+
+
+@ruffus.files(partial(RunUtils.FileIter, 'convert_pmids_to_pmcs'))
+def convert_pmids_to_pmcs(ifiles, ofile):
+
+    pmid2pmc = {}    
+    with open(ifiles[1]) as handle:
+        for row in csv.DictReader(handle):
+            pmid2pmc[row['PMID']] = row['PMCID']
+    
+    present_ids = set()
+    is os.path.exists(ofile):
+        with open(ofile) as handle:
+            for line in handle:
+                present_ids.add(line.strip())
+
+    new_ids = set()
+    with open(ifiles[0]) as handle:
+        for line in handle:
+            idstr = line.strip()
+            idstr = pmid2pmc.get(idstr, idstr)
+            new_ids.add(idstr)
+
+    write_ids = new_ids - present_ids
+    if write_ids:
+        with open(ifiles[0], 'w') as handle:
+            for idstr in sorted(new_ids):
+                handle.write(idstr + '\n')
+
 
 
 
