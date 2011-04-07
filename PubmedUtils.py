@@ -1,11 +1,10 @@
 import sys
-import logging, logging.handlers
-from DistAnnot.ensure_ascii import unicode_to_ascii
+from ensure_ascii import unicode_to_ascii
 import re, urllib2
 from datetime import datetime
 from BeautifulSoup import BeautifulStoneSoup
 from itertools import islice
-from DistAnnot.process import TimedSemaphore
+from GeneralUtils import TimedSemaphore
 
 def take(NUM, iterable):
     return list(islice(iterable, NUM))
