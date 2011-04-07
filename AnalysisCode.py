@@ -7,29 +7,21 @@ import RunUtils
 
 
 
-@ruffus.files('Data/QueryList.txt', 'Data/QueryList.sen')
-def search_pubmed(ifile, ofile):
+@ruffus.files(partial(RunUtils.FileIter, 'search_pubmed'))
+def search_pubmed(ifile, ofile, search_sent):
     
-    with open(ifile) as handle:
-        for row in csv.DictReader(handle):
-            print 'searching', row['search']            
-            id_list = PubmedUtils.SearchPUBMED(row['search'])
-            fname = '%s--%s.res' % (GeneralUtils.slugify(row['org']), 
-                                    GeneralUtils.slugify(row['search']))
-            path = os.path.join('Data', 'SearchResults', fname)
-            with open(path, 'w') as handle:
-                for id_str in sorted(id_list):
-                    handle.write(str(id_str)+'\n')
+    id_list = PubmedUtils.SearchPUBMED(search_sent)
+    with open(ofile, 'w') as handle:
+        for id_str in sorted(id_list):
+            handle.write(str(id_str)+'\n')
 
-
-    GeneralUtils.touch(ofile)
 
 @ruffus.files('Data/QueryList.sen', 'Data/PMC-ids.csv')
 def get_PMCList(ifile, ofile):
     
     PubmedUtils.get_pmc_list('Data')
 
-
+@ruffus.follows(search_pubmed, get_PMCList)
 @ruffus.files(partial(RunUtils.FileIter, 'convert_pmids_to_pmcs'))
 def convert_pmids_to_pmcs(ifiles, ofile):
 
@@ -39,7 +31,7 @@ def convert_pmids_to_pmcs(ifiles, ofile):
             pmid2pmc[row['PMID']] = row['PMCID']
     
     present_ids = set()
-    is os.path.exists(ofile):
+    if os.path.exists(ofile):
         with open(ofile) as handle:
             for line in handle:
                 present_ids.add(line.strip())
@@ -53,14 +45,14 @@ def convert_pmids_to_pmcs(ifiles, ofile):
 
     write_ids = new_ids - present_ids
     if write_ids:
-        with open(ifiles[0], 'w') as handle:
+        with open(ofile, 'w') as handle:
             for idstr in sorted(new_ids):
                 handle.write(idstr + '\n')
 
 
 
 
-@ruffus.follows(search_pubmed, get_PMCList)
+@ruffus.follows(search_pubmed, get_PMCList, convert_pmids_to_pmcs)
 def top_function():
     pass
 
