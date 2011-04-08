@@ -38,7 +38,7 @@ def FileIter(func_name):
         sdir = partial(os.path.join, 'Data', 'RawXML')
         odir = partial(os.path.join, 'Data', 'SentenceFiles')
 
-        files = [x for x in os.listdir(sdir('')) if x.endswith('.xml')]
+        files = sorted([x for x in os.listdir(sdir('')) if x.endswith('.xml')])
         for f in files:
             name = f.split('.')[0]
             if f.startswith('PMC'):
