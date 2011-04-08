@@ -6,7 +6,7 @@ import PubmedUtils
 import RunUtils
 
 
-
+@ruffus.jobs_limit(1)
 @ruffus.files(partial(RunUtils.FileIter, 'search_pubmed'))
 def search_pubmed(ifile, ofile, search_sent):
     
@@ -16,11 +16,13 @@ def search_pubmed(ifile, ofile, search_sent):
             handle.write(str(id_str)+'\n')
 
 
+@ruffus.jobs_limit(1)
 @ruffus.files('Data/QueryList.sen', 'Data/PMC-ids.csv')
 def get_PMCList(ifile, ofile):
     
     PubmedUtils.get_pmc_list('Data')
 
+@ruffus.jobs_limit(1)
 @ruffus.follows(search_pubmed, get_PMCList)
 @ruffus.files(partial(RunUtils.FileIter, 'convert_pmids_to_pmcs'))
 def convert_pmids_to_pmcs(ifiles, ofile):
@@ -49,6 +51,7 @@ def convert_pmids_to_pmcs(ifiles, ofile):
             for idstr in sorted(new_ids):
                 handle.write(idstr + '\n')
 
+@ruffus.jobs_limit(1)
 @ruffus.follows(convert_pmids_to_pmcs)
 @ruffus.files(partial(RunUtils.FileIter, 'download_pmids'))
 def download_pmids(ifile, ofile, odir):
@@ -73,6 +76,7 @@ def download_pmids(ifile, ofile, odir):
 
     GeneralUtils.touch(ofile)
 
+@ruffus.jobs_limit(1)
 @ruffus.follows(convert_pmids_to_pmcs)
 @ruffus.files(partial(RunUtils.FileIter, 'download_pmc'))
 def download_pmc(ifile, ofile, odir):
@@ -123,4 +127,4 @@ def top_function():
 
 if __name__ == '__main__':
     
-    ruffus.pipeline_run([top_function])
+    ruffus.pipeline_run([top_function], workers = 4)
