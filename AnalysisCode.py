@@ -115,10 +115,14 @@ def extract_text(ifile, ofile, typ):
             handle.write('%i\t%s\n' % (ind, par))
         
 
-
-
-
 @ruffus.follows(extract_text)
+@ruffus.files(partial(RunUtils.FileIter, 'get_mutations'))
+def get_mutations(ifile, ofile):
+    
+    PubmedUtils.process_mutation(ifile, ofile)
+
+
+@ruffus.follows(get_mutations)
 def top_function():
     pass
 
@@ -127,4 +131,4 @@ def top_function():
 
 if __name__ == '__main__':
     
-    ruffus.pipeline_run([top_function], workers = 4)
+    ruffus.pipeline_run([top_function], multiprocess = 4)
