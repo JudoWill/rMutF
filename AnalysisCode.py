@@ -9,7 +9,14 @@ import RunUtils
 @ruffus.jobs_limit(1)
 @ruffus.files(partial(RunUtils.FileIter, 'search_pubmed'))
 def search_pubmed(ifile, ofile, search_sent):
-    """Uses the EUtils pipeline to search all data in the input file."""
+    """Uses the EUtils pipeline to search all data in the input file.
+    
+    Arguements:
+    ifile -- The search file (not actually used but needed by Ruffus 
+                for dependancy management)
+    ofile -- The result file
+    search_sent -- The sentence to search by EUtils
+    """
     
     id_list = PubmedUtils.SearchPUBMED(search_sent)
     with open(ofile, 'w') as handle:
@@ -20,7 +27,12 @@ def search_pubmed(ifile, ofile, search_sent):
 @ruffus.jobs_limit(1)
 @ruffus.files('Data/QueryList.sen', 'Data/PMC-ids.csv')
 def get_PMCList(ifile, ofile):
-    """Downloads the PMC-ids.csv file which maps PMIDS to PMCIDS"""
+    """Downloads the PMC-ids.csv file which maps PMIDS to PMCIDS.
+    
+    Arguements:
+    ifile -- The sentinal file.
+    ofile -- The downloaded PMC-ids mapping file.
+    """
     
     PubmedUtils.get_pmc_list('Data')
 
@@ -28,7 +40,12 @@ def get_PMCList(ifile, ofile):
 @ruffus.follows(search_pubmed, get_PMCList)
 @ruffus.files(partial(RunUtils.FileIter, 'convert_pmids_to_pmcs'))
 def convert_pmids_to_pmcs(ifiles, ofile):
-    """Converts PMID to PMCIDS and makes sure to only add NEW ids"""
+    """Converts PMID to PMCIDS and makes sure to only add NEW ids.
+    
+    Arguements:
+    ifiles -- A 2-tuple (search-results, PMC-ids-mapping)
+    ofile -- The mapped results file.
+    """
 
     pmid2pmc = {}    
     with open(ifiles[1]) as handle:
@@ -60,51 +77,29 @@ def convert_pmids_to_pmcs(ifiles, ofile):
 def download_pmids(ifile, ofile, odir):
     """Downloads the raw Pubmed XML data."""
    
-    needed_pmids = set()
+    needed_ids = set()
     with open(ifile) as handle:
         for line in handle:
-            if not line.startswith('PMC'):
-                needed_pmids.add(line.strip())
+            needed_ids.add(line.strip())
 
-    present_pmids = set()
-    for f in os.listdir(odir):
-        if f.endswith('.xml') and not f.startswith('PMC'):
-            present_pmids.add(f.split('.')[0])
+    present_ids = set()
+    for f in (x for x os.listdir(odir) if x.endswith('.xml')):
+        present_ids.add(f.split('.')[0])
 
     name_fun = partial(os.path.join, odir)
-    needed_pmids -= present_pmids
-    for xml, pmid in PubmedUtils.GetXMLfromList(needed_pmids, db = 'pubmed'):
+    needed_ids -= present_ids
+    pmids = (x for x in needed_ids if not x.startswith('PMC'))
+    pmcs = (x for x in needed_ids if x.startswith('PMC'))
+    for xml, pmid in PubmedUtils.GetXMLfromList(pmids, db = 'pubmed'):
         with open(name_fun(pmid+'.xml'), 'w') as handle:
             handle.write(xml)
-
-    GeneralUtils.touch(ofile)
-
-@ruffus.jobs_limit(1)
-@ruffus.follows(convert_pmids_to_pmcs)
-@ruffus.files(partial(RunUtils.FileIter, 'download_pmc'))
-def download_pmc(ifile, ofile, odir):
-    """Downloads the raw PMC xml files."""
-   
-    needed_pmids = set()
-    with open(ifile) as handle:
-        for line in handle:
-            if line.startswith('PMC'):
-                needed_pmids.add(line.strip())
-
-    present_pmids = set()
-    for f in os.listdir(odir):
-        if f.endswith('.xml') and f.startswith('PMC'):
-            present_pmids.add(f.split('.')[0])
-
-    name_fun = partial(os.path.join, odir)
-    needed_pmids -= present_pmids
-    for xml, pmid in PubmedUtils.GetXMLfromList(needed_pmids, db = 'pmc'):
+    for xml, pmid in PubmedUtils.GetXMLfromList(pmids, db = 'pmc'):
         with open(name_fun(pmid+'.xml'), 'w') as handle:
             handle.write(xml)
-
+            
     GeneralUtils.touch(ofile)
 
-@ruffus.follows(download_pmc, download_pmids)
+@ruffus.follows(download_pmids)
 @ruffus.files(partial(RunUtils.FileIter, 'extract_text'))
 def extract_text(ifile, ofile, typ):
     """Extracts raw-text paragraphs from PMC and PMID xml files."""
