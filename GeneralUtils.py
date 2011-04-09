@@ -5,6 +5,7 @@ import unicodedata
 
 
 class TimedSemaphore():
+    """A simple Timed Semaphore which only allows a specific number of requests per second."""
     def __init__(self, timer, total):
         self.sem = Semaphore(total)
         self.time = timer
