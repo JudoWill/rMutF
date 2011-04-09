@@ -9,6 +9,7 @@ import RunUtils
 @ruffus.jobs_limit(1)
 @ruffus.files(partial(RunUtils.FileIter, 'search_pubmed'))
 def search_pubmed(ifile, ofile, search_sent):
+    """Uses the EUtils pipeline to search all data in the input file."""
     
     id_list = PubmedUtils.SearchPUBMED(search_sent)
     with open(ofile, 'w') as handle:
@@ -19,6 +20,7 @@ def search_pubmed(ifile, ofile, search_sent):
 @ruffus.jobs_limit(1)
 @ruffus.files('Data/QueryList.sen', 'Data/PMC-ids.csv')
 def get_PMCList(ifile, ofile):
+    """Downloads the PMC-ids.csv file which maps PMIDS to PMCIDS"""
     
     PubmedUtils.get_pmc_list('Data')
 
@@ -26,6 +28,7 @@ def get_PMCList(ifile, ofile):
 @ruffus.follows(search_pubmed, get_PMCList)
 @ruffus.files(partial(RunUtils.FileIter, 'convert_pmids_to_pmcs'))
 def convert_pmids_to_pmcs(ifiles, ofile):
+    """Converts PMID to PMCIDS and makes sure to only add NEW ids"""
 
     pmid2pmc = {}    
     with open(ifiles[1]) as handle:
@@ -55,7 +58,7 @@ def convert_pmids_to_pmcs(ifiles, ofile):
 @ruffus.follows(convert_pmids_to_pmcs)
 @ruffus.files(partial(RunUtils.FileIter, 'download_pmids'))
 def download_pmids(ifile, ofile, odir):
-    
+    """Downloads the raw Pubmed XML data."""
    
     needed_pmids = set()
     with open(ifile) as handle:
@@ -80,7 +83,7 @@ def download_pmids(ifile, ofile, odir):
 @ruffus.follows(convert_pmids_to_pmcs)
 @ruffus.files(partial(RunUtils.FileIter, 'download_pmc'))
 def download_pmc(ifile, ofile, odir):
-    
+    """Downloads the raw PMC xml files."""
    
     needed_pmids = set()
     with open(ifile) as handle:
@@ -104,6 +107,7 @@ def download_pmc(ifile, ofile, odir):
 @ruffus.follows(download_pmc, download_pmids)
 @ruffus.files(partial(RunUtils.FileIter, 'extract_text'))
 def extract_text(ifile, ofile, typ):
+    """Extracts raw-text paragraphs from PMC and PMID xml files."""
     
     if typ == 'pmc':
         iterable = PubmedUtils.ExtractPMCPar(open(ifile).read())
@@ -118,6 +122,7 @@ def extract_text(ifile, ofile, typ):
 @ruffus.follows(extract_text)
 @ruffus.files(partial(RunUtils.FileIter, 'get_mutations'))
 def get_mutations(ifile, ofile):
+    """Uses a REGEXP to find mutagenesis experiments."""
     
     PubmedUtils.process_mutation(ifile, ofile)
 
