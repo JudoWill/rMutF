@@ -83,7 +83,7 @@ def download_pmids(ifile, ofile, odir):
             needed_ids.add(line.strip())
 
     present_ids = set()
-    for f in (x for x os.listdir(odir) if x.endswith('.xml')):
+    for f in (x for x in os.listdir(odir) if x.endswith('.xml')):
         present_ids.add(f.split('.')[0])
 
     name_fun = partial(os.path.join, odir)

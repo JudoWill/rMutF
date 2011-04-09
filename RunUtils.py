@@ -24,7 +24,7 @@ def FileIter(func_name):
                 ofile = sdir(fname)
                 yield queryfile, ofile, row['search']
 
-    elif func_name == 'download_pmids'
+    elif func_name == 'download_pmids':
         
         sdir = partial(os.path.join,'Data', 'SearchResults')
         odir = os.path.join('Data', 'RawXML')
