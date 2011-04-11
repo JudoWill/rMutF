@@ -13,6 +13,16 @@ def generate_whatizit_client():
 
 
 def ask_whatizit(search_sent_list, client = None, pipeline = 'whatizitSwissprot'):
+    """A function which queries the Whatizit tool use the SOAP client.
+
+    Care is taken to ensure that identical sentences are not querried 
+    multiple times.
+
+    Arguments:
+    search_sent_list -- A LIST of sentences to search.
+    client = None -- A SOAP client ... If None then one is created on the fly.
+    pipeline = 'whatizitSwissprot' -- The pipeline to search.
+    """
 
     if client is None:
         client = generate_whatizit_client()
