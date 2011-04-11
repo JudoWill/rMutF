@@ -127,6 +127,7 @@ def get_mutations(ifile, ofile):
 @ruffus.follows(get_mutations)
 @ruffus.files(partial(RunUtils.FileIter, 'process_mut_file'))
 def process_mut_file(ifile, ofiles):
+    """Processes mut files and checks them for mentions of protein-names"""
     
     with open(ifile) as handle:
         rows = list(csv.DictReader(handle, delimiter = '\t'))
@@ -149,6 +150,7 @@ def process_mut_file(ifile, ofiles):
 @ruffus.follows(process_mut_file)
 @ruffus.merge('Data/ProteinFiles/*.prot', ('Data/Mergedresults.txt', 'Data/Mergedresults.sen'))
 def merge_results(ifiles, ofiles):
+    """Merges the results of the protein-name recognition into one file."""
 
     with open(ofiles[0], 'w') as ohandle:
         ofields = ('Article', 'ParNum', 'SentNum', 'Mutation', 'Swissprot')
