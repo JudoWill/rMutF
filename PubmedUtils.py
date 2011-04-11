@@ -149,20 +149,17 @@ def process_mutation(ifile, ofile, finder = None):
         writer = csv.DictWriter(handle, ofields, delimiter = '\t')
         writer.writerow(dict(zip(ofields, ofields)))
         for row in rows:
-            try:
+            if row['Text']:
                 sent_list = ['']+list(sent_tokenize(row['Text'].replace('\n', '')))+['']
-            except:
-                print row['Text']
-                raise TypeError
 
-            for sentnum, sent in enumerate(sent_list):
-                for mut, _ in finder(sent).items():
-                    text = ' '.join(sent_list[sentnum-1:sentnum+1])
-                    nrow = {'Text': text,
-                            'ParNum': row['ParNum'],
-                            'SentNum': sentnum,
-                            'Mutation': mut}
-                    writer.writerow(nrow)
+                for sentnum, sent in enumerate(sent_list):
+                    for mut, _ in finder(sent).items():
+                        text = ' '.join(sent_list[sentnum-1:sentnum+1])
+                        nrow = {'Text': text,
+                                'ParNum': row['ParNum'],
+                                'SentNum': sentnum,
+                                'Mutation': mut}
+                        writer.writerow(nrow)
 
 
 def get_pmc_list(path):
