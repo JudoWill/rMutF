@@ -77,7 +77,13 @@ def convert_pmids_to_pmcs(ifiles, ofile):
 @ruffus.follows(convert_pmids_to_pmcs)
 @ruffus.files(partial(RunUtils.FileIter, 'download_pmids'))
 def download_pmids(ifile, ofile, odir):
-    """Downloads the raw Pubmed XML data."""
+    """Downloads the raw Pubmed XML data.
+
+    Arguements:
+    ifile -- The input file in which each line contains a SINLGE PMID/PMCID to download.
+    ofile -- The sentinal file to touch when finished
+    odir -- The output directoy to download all XML files into.
+    """
    
     needed_ids = set()
     with open(ifile) as handle:
@@ -104,7 +110,13 @@ def download_pmids(ifile, ofile, odir):
 @ruffus.follows(download_pmids)
 @ruffus.files(partial(RunUtils.FileIter, 'extract_text'))
 def extract_text(ifile, ofile, typ):
-    """Extracts raw-text paragraphs from PMC and PMID xml files."""
+    """Extracts raw-text paragraphs from PMC and PMID xml files.
+
+    Arguments:
+    ifile -- An input xml file to extract raw text from.
+    ofile -- The output file to write data into.
+    typ -- A string indicating the type of xml file (pmc or pubmed)
+    """
     
     if typ == 'pmc':
         iterable = PubmedUtils.ExtractPMCPar(open(ifile).read())
@@ -119,7 +131,12 @@ def extract_text(ifile, ofile, typ):
 @ruffus.follows(extract_text)
 @ruffus.files(partial(RunUtils.FileIter, 'get_mutations'))
 def get_mutations(ifile, ofile):
-    """Uses a REGEXP to find mutagenesis experiments."""
+    """Uses a REGEXP to find mutagenesis experiments.
+
+    Arguments:
+    ifile -- The input raw text file to search
+    ofile -- The output file to put data into
+    """
     
     PubmedUtils.process_mutation(ifile, ofile)
 
@@ -127,7 +144,12 @@ def get_mutations(ifile, ofile):
 @ruffus.follows(get_mutations)
 @ruffus.files(partial(RunUtils.FileIter, 'process_mut_file'))
 def process_mut_file(ifile, ofiles):
-    """Processes mut files and checks them for mentions of protein-names"""
+    """Processes mut files and checks them for mentions of protein-names.
+
+    Arguments:
+    ifile -- The input Mutation file with text and mutation mentions.
+    ofiles -- A 2-tuple (result-file, sentinal-file)
+    """
     
     with open(ifile) as handle:
         rows = list(csv.DictReader(handle, delimiter = '\t'))
@@ -150,7 +172,12 @@ def process_mut_file(ifile, ofiles):
 @ruffus.follows(process_mut_file)
 @ruffus.merge('Data/ProteinFiles/*.prot', ('Data/Mergedresults.txt', 'Data/Mergedresults.sen'))
 def merge_results(ifiles, ofiles):
-    """Merges the results of the protein-name recognition into one file."""
+    """Merges the results of the protein-name recognition into one file.
+
+    Arguments:
+    ifiles -- A list of ALL results from process_mut_file to aggregate together.
+    ofiles -- A 2-tuple (merged-file, sentinal-file)
+    """
 
     with open(ofiles[0], 'w') as ohandle:
         ofields = ('Article', 'ParNum', 'SentNum', 'Mutation', 'Swissprot')
