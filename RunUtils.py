@@ -2,7 +2,7 @@ import os.path, os
 import csv
 from functools import partial
 import GeneralUtils
-
+from mutation_finder import mutation_finder_from_regex_filepath as mutfinder_gen
 
 def FileIter(func_name):
 
@@ -49,15 +49,16 @@ def FileIter(func_name):
             yield sdir(f), odir(name+'.sent'), typ
 
     elif func_name == 'get_mutations':
-
+        
         sdir = partial(os.path.join, 'Data', 'SentenceFiles')
         odir = partial(os.path.join, 'Data', 'MutFiles')
+        finder = None#mutfinder_gen('regex.txt')
 
         files = sorted([x for x in os.listdir(sdir('')) if x.endswith('.sent')])
 
         for f in files:
             name = f.split('.')[0]
-            yield sdir(f), odir(name + '.mut')            
+            yield sdir(f), odir(name + '.mut')
         
         
 

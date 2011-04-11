@@ -135,21 +135,28 @@ def ExtractPubPar(xmldata):
     if v:
         yield v.string.strip()
 
-def process_mutation(ifile, ofile):
+def process_mutation(ifile, ofile, finder = None):
     
     with open(ifile) as handle:
         reader = csv.DictReader(handle, delimiter = '\t', fieldnames = ('ParNum', 'Text'))
         rows = [x for x in reader]
 
-    MutFinder = mutfinder_gen('regex.txt')
+    if finder is None:
+        finder = mutfinder_gen('regex.txt')
+
     ofields = ('ParNum', 'SentNum', 'Mutation', 'Text')
     with open(ofile, 'w') as handle:
         writer = csv.DictWriter(handle, ofields, delimiter = '\t')
         writer.writerow(dict(zip(ofields, ofields)))
         for row in rows:
-            sent_list = ['']+list(sent_tokenize(row['Text']))+['']
+            try:
+                sent_list = ['']+list(sent_tokenize(row['Text'].replace('\n', '')))+['']
+            except:
+                print row['Text']
+                raise TypeError
+
             for sentnum, sent in enumerate(sent_list):
-                for mut, _ in MutFinder(sent).items():
+                for mut, _ in finder(sent).items():
                     text = ' '.join(sent_list[sentnum-1:sentnum+1])
                     nrow = {'Text': text,
                             'ParNum': row['ParNum'],
