@@ -60,5 +60,14 @@ def FileIter(func_name):
             name = f.split('.')[0]
             yield sdir(f), odir(name + '.mut')
         
+    elif func_name == 'process_mut_file':
         
+        sdir = partial(os.path.join, 'Data', 'MutFiles')
+        odir = partial(os.path.join, 'Data', 'ProteinFiles')
+
+        files = sorted([x for x in os.listdir(sdir('')) if x.endswith('.mut')])
+
+        for f in files:
+            name = f.split('.')[0]
+            yield sdir(f), (odir(name + '.prot'), odir(name + '.sen'))
 
