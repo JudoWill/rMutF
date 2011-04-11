@@ -146,9 +146,28 @@ def process_mut_file(ifile, ofiles):
         for f in ofiles:
             GeneralUtils.touch(f)
 
-
-
 @ruffus.follows(process_mut_file)
+@ruffus.merge('Data/ProteinFiles/*.prot', ('Data/Mergedresults.txt', 'Data/Mergedresults.sen'))
+def merge_results(ifiles, ofiles):
+
+    with open(ofiles[0], 'w') as ohandle:
+        ofields = ('Article', 'ParNum', 'SentNum', 'Mutation', 'Swissprot')
+        writer = csv.DictWriter(ohandle, ofields, delimiter = '\t',
+                                    extrasaction = 'ignore')
+        writer.writerow(dict(zip(ofields, ofields)))
+        for f in ifiles:
+            with open(f) as handle:
+                rows = list(csv.DictReader(handle, delimiter = '\t'))
+            art = f.split(os.sep)[-1].split('.')[0]
+            for row in rows:
+                row['Article'] = art
+                writer.writerow(row)
+    
+    GeneralUtils.touch(ofiles[1])    
+
+
+
+@ruffus.follows(merge_results)
 def top_function():
     pass
 
