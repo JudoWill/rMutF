@@ -1,0 +1,7 @@
+This is a simple package for finding the mutations in organisms and their functional relevance. It uses the NCBI Eutils to download the relevant articles. Then it uses a regular expression search to extract directed mutagenesis (ie. V347I) from the free text. Then it uses the Whatizit pipeline from EBI to annotate the proteins co-mentioned with the mutations. If there is a single mutation and single protein mentioned in a sentence then it assumes that the mutation refers to that protein. Then it accumulates all of the co-mentions into a single document.
+
+This entire pipeline can run with a single command:
+
+python AnalysisCode.py
+
+The Ruffus pipeline will take care of all of the intermediate files and downstream analysis.
