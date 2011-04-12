@@ -50,7 +50,7 @@ def uniprot_to_entrez(uniprot_ids):
 
 
 
-def entrez_to_genesymbol(entrez_ids):
+def entrez_to_genesymbol(entrez_ids, with_taxid = False):
     """Converts a list of entrez ids into gene-symbols. Returns a dict."""
 
     res = {}
@@ -59,28 +59,34 @@ def entrez_to_genesymbol(entrez_ids):
                 'map_location', 'type_of_gene', 'Symbol_from_nomenclature_authority', 
                 'Full_name_from_nomenclature_authority', 'Nomenclature_status', 
                 'Other_designations', 'Modification_date')
+    if with_taxid:
+        getter = itemgetter('Symbol', 'tax_id')
+    else:
+        getter = itemgetter('Symbol')        
+
     with open('Data/Mapping/gene_info') as handle:
         handle.next()
         iterable = csv.DictReader(handle, fieldnames = fields, delimiter = '\t')
         for row in iterable:
             if row['GeneID'] in all_ids:
-                res[row['GeneID']] = row['Symbol']
+                res[row['GeneID']] = getter(row)
 
     return res
 
 
-def uniprot_to_symbol(uniprot_ids, uniprot2entrez = None):
+def uniprot_to_symbol(uniprot_ids, uniprot2entrez = None, with_taxid = False):
 
     if not uniprot2entrez:
         uniprot2entrez = uniprot_to_entrez(uniprot_ids)
     entrezids = set(chain.from_iterable(uniprot2entrez.values()))
-    entrez2symbol = entrez_to_genesymbol(entrezids)
+    entrez2symbol = entrez_to_genesymbol(entrezids, with_taxid = with_taxid)
 
     res = defaultdict(set)
     for uniprot, ids in uniprot2entrez.iteritems():
         for entrez in ids:
-            sym = entrez2symbol[entrez]
-            res[uniprot].add(sym)
+            if entrez in entrez2symbol:
+                sym = entrez2symbol[entrez]
+                res[uniprot].add(sym)
 
     return res
     
