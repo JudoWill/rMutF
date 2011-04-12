@@ -1,5 +1,6 @@
 import csv, os, os.path, sys
 import ruffus
+import argparse
 from functools import partial
 from itertools import izip, chain
 import GeneralUtils
@@ -29,7 +30,7 @@ def search_pubmed(ifile, ofile, search_sent):
             handle.write(str(id_str)+'\n')
     
 @ruffus.jobs_limit(1)
-@ruffis.files(partial(RunUtils.FileIter, 'mapping_files'))
+@ruffus.files(partial(RunUtils.FileIter, 'mapping_files'))
 def download_files(ifile, ofile, url, path):
     """Downloads the mapping files needed for various steps"""
     
@@ -192,7 +193,7 @@ def merge_results(ifiles, ofiles):
     
     GeneralUtils.touch(ofiles[1])    
 
-@ruffus.files(('Data/Mergedresults.txt', 'Data/Mapping/idmapping.sort', 'Data/Mapping/gene_info'), 
+@ruffus.files(('Data/Mergedresults.txt', 'Data/Mapping/idmapping.dat.sort', 'Data/Mapping/gene_info'), 
                 ('Data/Convertedresults.txt', 'Data/AggregatedResults.txt'))
 @ruffus.follows(merge_results)
 def aggregate_results(ifiles, ofiles):
@@ -201,7 +202,7 @@ def aggregate_results(ifiles, ofiles):
         uniprot_ids = [x['Swissprot'] for x in csv.DictReader(handle, delimiter = '\t')]
     uniprot2entrez = UniprotUtils.uniprot_to_entrez(uniprot_ids)    
     print 'got entrez mapping', len(uniprot2entrez)    
-    uniprot2symbol = UniprotUtils.uniprot_to_symbol(uniprot_ids)
+    uniprot2symbol = UniprotUtils.uniprot_to_symbol(uniprot_ids, uniprot2entrez = uniprot2entrez)
     print 'got symbol mapping', len(uniprot2symbol)
 
     articles = defaultdict(set)
@@ -236,4 +237,18 @@ def top_function():
 
 if __name__ == '__main__':
     
-    ruffus.pipeline_run([top_function], multiprocess = 4)
+    parser = argparse.ArgumentParser(description='Mutation Finding Code')
+    
+    parser.add_argument('--get-mapping', dest = 'getmapping', action = 'store_true',
+                        default = False)
+    args = parser.parse_args()
+    
+    if args.getmapping:
+        ruffus.pipeline_run([download_files])
+    else:
+        ruffus.pipeline_run([top_function], multiprocess = 4)
+
+
+
+
+
