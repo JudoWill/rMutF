@@ -27,22 +27,17 @@ def search_pubmed(ifile, ofile, search_sent):
     with open(ofile, 'w') as handle:
         for id_str in sorted(id_list):
             handle.write(str(id_str)+'\n')
-
+    
+@ruffus.jobs_limit(1)
+@ruffis.files(partial(RunUtils.FileIter, 'mapping_files'))
+def download_files(ifile, ofile, url, path):
+    """Downloads the mapping files needed for various steps"""
+    
+    GeneralUtils.download_file(path, url, sort = ofile.endswith('.sort'))
+    GeneralUtils.touch(ofile)
 
 @ruffus.jobs_limit(1)
-@ruffus.files('Data/QueryList.sen', 'Data/PMC-ids.csv')
-def get_PMCList(ifile, ofile):
-    """Downloads the PMC-ids.csv file which maps PMIDS to PMCIDS.
-    
-    Arguements:
-    ifile -- The sentinal file.
-    ofile -- The downloaded PMC-ids mapping file.
-    """
-    
-    PubmedUtils.get_pmc_list('Data')
-
-@ruffus.jobs_limit(1)
-@ruffus.follows(search_pubmed, get_PMCList)
+@ruffus.follows(search_pubmed)
 @ruffus.files(partial(RunUtils.FileIter, 'convert_pmids_to_pmcs'))
 def convert_pmids_to_pmcs(ifiles, ofile):
     """Converts PMID to PMCIDS and makes sure to only add NEW ids.
@@ -197,16 +192,9 @@ def merge_results(ifiles, ofiles):
     
     GeneralUtils.touch(ofiles[1])    
 
-@ruffus.files('Data/Mergedresults.sen', ('Data/idmapping.dat', 'Data/gene_info'))
-@ruffus.follows(merge_results)
-def download_uniprot(ifile, ofile):
-    """Downloads and unzips the Uniprot mapping file."""
-    UniprotUtils.get_uniprot_mapping('Data')
-
-
 @ruffus.files(('Data/Mergedresults.txt', 'Data/idmapping.dat', 'Data/gene_info'), 
                 ('Data/Convertedresults.txt', 'Data/AggregatedResults.txt'))
-@ruffus.follows(download_uniprot)
+@ruffus.follows(merge_results)
 def aggregate_results(ifiles, ofiles):
     
     with open(ifiles[0]) as handle:

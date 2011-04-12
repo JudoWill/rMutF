@@ -26,6 +26,17 @@ def touch(fname, times = None):
     with file(fname, 'a'):
         os.utime(fname, times)
 
+def download_file(path, url, sort = False):
+    """Uses wget to download a file from a url and unzip it."""
+    
+    fname = url.split('/')[-1].replace('.gz', '')
+    with pushd(path):
+        cmd = shlex.split('wget -N %s' % url)
+        check_call(cmd)
+        if sort:
+            ohandle = open(fname + '.sort', 'w')
+            ihandle = open(fname)
+            call(['sort'], stdin = ihandle, stdout = ohandle)
 
 
 def slugify(value):
