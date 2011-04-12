@@ -1,8 +1,9 @@
 from subprocess import check_call
 from GeneralUtils import pushd, touch
-from itertools import groupby, chain
+from itertools import groupby, chain, dropwhile
 from collections import defaultdict
-from operator import itemgetter
+from functools import partial
+from operator import itemgetter, methodcaller, not_
 import shlex
 import csv
 
@@ -30,15 +31,21 @@ def uniprot_to_entrez(uniprot_ids):
     """Converts uniprot ids to entrez gene-ids. Returns a dict. of sets"""
 
     res = defaultdict(set)
-    all_ids = set(uniprot_ids)
+    all_ids = sorted(set(uniprot_ids))
     fields = ('ID', 'db', 'value')
-    with open('Data/Mapping/idmapping.sort') as handle:
+    with open('Data/Mapping/idmapping.dat.sort') as handle:
+        ihandle = dropwhile(lambda x: not x.startswith(all_ids[0]), handle)
+        ihandle.next()
+        print 'actually reading now'
         iterable = csv.DictReader(handle, fieldnames = fields, delimiter = '\t')
-        for rowid, rows in groupby(iterable, itemgetter('ID')):
-            if rowid in all_ids:
-                for row in rows:
-                    if row['db'] == 'GeneID':
-                        res[rowid].add(row['value'])
+        for idval in all_ids:
+            #print idval
+            niter = dropwhile(lambda x: x['ID'] < idval, iterable)
+            for row in niter:
+                if row['ID'] != idval:
+                    break
+                if row['db'] == 'GeneID':
+                    res[idval].add(row['value'])
     return res
 
 
@@ -62,16 +69,16 @@ def entrez_to_genesymbol(entrez_ids):
     return res
 
 
-def uniprot_to_symbol(uniprot_ids):
+def uniprot_to_symbol(uniprot_ids, uniprot2entrez = None):
 
-
-    uniprot2entrez = uniprot_to_entrez(uniprot_ids)
+    if not uniprot2entrez:
+        uniprot2entrez = uniprot_to_entrez(uniprot_ids)
     entrezids = set(chain.from_iterable(uniprot2entrez.values()))
     entrez2symbol = entrez_to_genesymbol(entrezids)
 
     res = defaultdict(set)
-    for uniprot, res in uniprot2entrez.iteritems():
-        for entrez in res:
+    for uniprot, ids in uniprot2entrez.iteritems():
+        for entrez in ids:
             sym = entrez2symbol[entrez]
             res[uniprot].add(sym)
 
