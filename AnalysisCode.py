@@ -2,7 +2,8 @@ import csv, os, os.path, sys
 import ruffus
 import argparse
 from functools import partial
-from itertools import izip, chain
+from itertools import izip, chain, ifilter, groupby
+from operator import itemgetter
 import GeneralUtils
 import PubmedUtils
 import RunUtils
@@ -220,29 +221,40 @@ def convert_results(ifiles, ofile):
                     conv_writer.writerow(row)
 
 
-@ruffus.files('Data/Convertedresults.txt', 'Data/AggregatedResults.txt')
+@ruffus.files(('Data/Convertedresults.txt', 'allowed_taxids.txt'), 
+                'Data/AggregatedResults.txt')
 @ruffus.follows(convert_results)
-def aggregate_results(ifile, ofile):
+def aggregate_results(ifiles, ofile):
 
-
+    with open(ifiles[1]) as handle:
+        tax2org = dict([(x['taxid'], x['name']) for x in csv.DictReader(handle)])
+    
     mut_dict = defaultdict(set)
-    with open(ifile) as handle:
-        for row in csv.DictReader(handle, delimiter = '\t'):
-            pass
+    with open(ifiles[0]) as handle:
+        iterable = csv.DictReader(handle, delimiter = '\t')
+        taxiter = ifilter(lambda x:x['Taxid'] in tax2org, iterable)
+        grouper = itemgetter('Article', 'ParNum', 'SentNum', 'Mutation')
+        for key, rows in groupby(taxiter, grouper):
+            rows = list(rows)
+            uni_orgs = set((tax2org[x['Taxid']] for x in rows))
+            uni_prots = set((x['Symbol'] for x in rows))
+            if len(uni_orgs) == 1 and len(uni_prots) == 1:
+                mut_dict[(uni_orgs.pop(), uni_prots.pop(), key[3])].add(key[0])
+            
 
-    aggfields = ('Symbol', 'Mutation', '#articles', 'Aritcles')
+    aggfields = ('Organism', 'Symbol', 'Mutation', '#articles', 'Articles')
     with open(ofile, 'w') as agg_handle:                    
         agg_writer = csv.DictWriter(agg_handle, aggfields, delimiter = '\t', extrasaction = 'ignore')
         agg_writer.writerow(dict(zip(aggfields, aggfields)))
-        for (mut, genesym), arts in articles.iteritems():
-            agg_writer.writerow({'Symbol':genesym, 'Mutation': mut, 
+        for (org, genesym, mut), arts in sorted(mut_dict.iteritems()):
+            agg_writer.writerow({'Organism':org,'Symbol':genesym, 'Mutation': mut, 
                                 '#articles':len(arts), 
-                                'Aritcles':','.join(arts)})
+                                'Articles':','.join(arts)})
     
 
 
 
-@ruffus.follows(convert_results)
+@ruffus.follows(aggregate_results)
 def top_function():
     pass
 
