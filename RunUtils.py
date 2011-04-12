@@ -76,4 +76,4 @@ def FileIter(func_name):
                     ('ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', 'gene_info'),
                     ('ftp://ftp.ncbi.nlm.nih.gov/pub/pmc/PMC-ids.csv.gz', 'PMC-ids.csv'))
         for url, ofile in items:
-            yield '', os.path.join(path, ofile), url, path
+            yield None, os.path.join(path, ofile), url, path
