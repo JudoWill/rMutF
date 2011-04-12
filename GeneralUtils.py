@@ -1,8 +1,9 @@
 from threading import Semaphore, Timer
+from subprocess import check_call
 import re
 import os
 import unicodedata
-
+import shlex
 
 class TimedSemaphore():
     """A simple Timed Semaphore which only allows a specific number of requests per second."""
@@ -23,8 +24,11 @@ class TimedSemaphore():
         Timer(self.time, self.release).start()
 
 def touch(fname, times = None):
-    with file(fname, 'a'):
-        os.utime(fname, times)
+    try:
+        with file(fname, 'a'):
+            os.utime(fname, times)
+    except IOError: 
+        check_call(shlex.split('touch %s' % fname))
 
 def download_file(path, url, sort = False):
     """Uses wget to download a file from a url and unzip it."""
@@ -33,10 +37,12 @@ def download_file(path, url, sort = False):
     with pushd(path):
         cmd = shlex.split('wget -N %s' % url)
         check_call(cmd)
+        cmd = shlex.split('gzip -df %s' % fname+'.gz')
+        check_call(cmd)
         if sort:
             ohandle = open(fname + '.sort', 'w')
             ihandle = open(fname)
-            call(['sort'], stdin = ihandle, stdout = ohandle)
+            check_call(['sort'], stdin = ihandle, stdout = ohandle)
 
 
 def slugify(value):
