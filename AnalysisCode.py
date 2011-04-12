@@ -192,7 +192,7 @@ def merge_results(ifiles, ofiles):
     
     GeneralUtils.touch(ofiles[1])    
 
-@ruffus.files(('Data/Mergedresults.txt', 'Data/idmapping.dat', 'Data/gene_info'), 
+@ruffus.files(('Data/Mergedresults.txt', 'Data/Mapping/idmapping.sort', 'Data/Mapping/gene_info'), 
                 ('Data/Convertedresults.txt', 'Data/AggregatedResults.txt'))
 @ruffus.follows(merge_results)
 def aggregate_results(ifiles, ofiles):

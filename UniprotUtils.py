@@ -32,7 +32,7 @@ def uniprot_to_entrez(uniprot_ids):
     res = defaultdict(set)
     all_ids = set(uniprot_ids)
     fields = ('ID', 'db', 'value')
-    with open('Data/idmapping.dat') as handle:
+    with open('Data/Mapping/idmapping.sort') as handle:
         iterable = csv.DictReader(handle, fieldnames = fields, delimiter = '\t')
         for rowid, rows in groupby(iterable, itemgetter('ID')):
             if rowid in all_ids:
@@ -52,7 +52,7 @@ def entrez_to_genesymbol(entrez_ids):
                 'map_location', 'type_of_gene', 'Symbol_from_nomenclature_authority', 
                 'Full_name_from_nomenclature_authority', 'Nomenclature_status', 
                 'Other_designations', 'Modification_date')
-    with open('Data/gene_info') as handle:
+    with open('Data/Mapping/gene_info') as handle:
         handle.next()
         iterable = csv.DictReader(handle, fieldnames = fields, delimiter = '\t')
         for row in iterable:
