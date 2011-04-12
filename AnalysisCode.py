@@ -194,41 +194,55 @@ def merge_results(ifiles, ofiles):
     GeneralUtils.touch(ofiles[1])    
 
 @ruffus.files(('Data/Mergedresults.txt', 'Data/Mapping/idmapping.dat.sort', 'Data/Mapping/gene_info'), 
-                ('Data/Convertedresults.txt', 'Data/AggregatedResults.txt'))
+                'Data/Convertedresults.txt')
 @ruffus.follows(merge_results)
-def aggregate_results(ifiles, ofiles):
+def convert_results(ifiles, ofile):
     
     with open(ifiles[0]) as handle:
         uniprot_ids = [x['Swissprot'] for x in csv.DictReader(handle, delimiter = '\t')]
     uniprot2entrez = UniprotUtils.uniprot_to_entrez(uniprot_ids)    
     print 'got entrez mapping', len(uniprot2entrez)    
-    uniprot2symbol = UniprotUtils.uniprot_to_symbol(uniprot_ids, uniprot2entrez = uniprot2entrez)
+    uniprot2symbol = UniprotUtils.uniprot_to_symbol(uniprot_ids, 
+                                                    uniprot2entrez = uniprot2entrez, 
+                                                    with_taxid = True)
     print 'got symbol mapping', len(uniprot2symbol)
 
-    articles = defaultdict(set)
-    convfields = ('Article', 'ParNum', 'SentNum', 'Mutation', 'Swissprot', 'GeneID', 'Symbol')
-    aggfields = ('Symbol', 'Mutation', '#articles', 'Aritcles')
-    with open(ofiles[0], 'w') as conv_handle:
+    convfields = ('Article', 'ParNum', 'SentNum', 'Mutation', 'Swissprot', 'GeneID', 'Symbol', 'Taxid')
+    with open(ofile, 'w') as conv_handle:
         conv_writer = csv.DictWriter(conv_handle, convfields, delimiter = '\t', extrasaction = 'ignore')
-        conv_writer.writerow(dict(zip(convfields)))
+        conv_writer.writerow(dict(zip(convfields, convfields)))
         with open(ifiles[0]) as ihandle:
             for row in csv.DictReader(ihandle, delimiter = '\t'):
                 for geneid, genesym in zip(uniprot2entrez[row['Swissprot']], uniprot2symbol[row['Swissprot']]):
                     row['GeneID'] = geneid
-                    row['Symbol'] = genesym
-                    articles[(row['Mutation'], genesym)].add(row['Article'])
+                    row['Symbol'] = genesym[0]
+                    row['Taxid'] = genesym[1]
                     conv_writer.writerow(row)
 
-    with open(ofiles[1], 'w') as agg_handle:                    
+
+@ruffus.files('Data/Convertedresults.txt', 'Data/AggregatedResults.txt')
+@ruffus.follows(convert_results)
+def aggregate_results(ifile, ofile):
+
+
+    mut_dict = defaultdict(set)
+    with open(ifile) as handle:
+        for row in csv.DictReader(handle, delimiter = '\t'):
+            pass
+
+    aggfields = ('Symbol', 'Mutation', '#articles', 'Aritcles')
+    with open(ofile, 'w') as agg_handle:                    
         agg_writer = csv.DictWriter(agg_handle, aggfields, delimiter = '\t', extrasaction = 'ignore')
-        agg_writer.writerow(dict(zip(aggfields)))
+        agg_writer.writerow(dict(zip(aggfields, aggfields)))
         for (mut, genesym), arts in articles.iteritems():
             agg_writer.writerow({'Symbol':genesym, 'Mutation': mut, 
                                 '#articles':len(arts), 
                                 'Aritcles':','.join(arts)})
+    
 
 
-@ruffus.follows(aggregate_results)
+
+@ruffus.follows(convert_results)
 def top_function():
     pass
 
