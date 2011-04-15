@@ -154,15 +154,16 @@ def process_mut_file(ifile, ofiles):
     with open(ifile) as handle:
         rows = list(csv.DictReader(handle, delimiter = '\t'))
     if rows:
-        ofields = ('ParNum', 'SentNum', 'Mutation', 'Swissprot', 'Text')
+        ofields = ('ParNum', 'SentNum', 'Mutation', 'Swissprot', 'ProtText', 'Text')
         writer = csv.DictWriter(open(ofiles[0], 'w'), ofields, delimiter = '\t')
         writer.writerow(dict(zip(ofields, ofields)))
         sent_list = [x['Text'] for x in rows]
         iterable = WhatizitUtils.ask_whatizit(sent_list, 
                             pipeline = 'whatizitSwissprot')
-        for row, reslist in izip(rows, iterable):
+        for row, (prot_text, reslist) in izip(rows, iterable):
             for res in reslist:
                 row['Swissprot'] = res
+                row['ProtText'] = prot_text
                 writer.writerow(row)
         GeneralUtils.touch(ofiles[1])
     else:
