@@ -181,7 +181,7 @@ def merge_results(ifiles, ofiles):
     """
 
     with open(ofiles[0], 'w') as ohandle:
-        ofields = ('Article', 'ParNum', 'SentNum', 'Mutation', 'Swissprot')
+        ofields = ('Article', 'ParNum', 'SentNum', 'Mutation', 'Swissprot', 'ProtText')
         writer = csv.DictWriter(ohandle, ofields, delimiter = '\t',
                                     extrasaction = 'ignore')
         writer.writerow(dict(zip(ofields, ofields)))
@@ -209,7 +209,7 @@ def convert_results(ifiles, ofile):
                                                     with_taxid = True)
     print 'got symbol mapping', len(uniprot2symbol)
 
-    convfields = ('Article', 'ParNum', 'SentNum', 'Mutation', 'Swissprot', 'GeneID', 'Symbol', 'Taxid')
+    convfields = ('Article', 'ParNum', 'SentNum', 'Mutation', 'Swissprot', 'ProtText', 'GeneID', 'Symbol', 'Taxid')
     with open(ofile, 'w') as conv_handle:
         conv_writer = csv.DictWriter(conv_handle, convfields, delimiter = '\t', extrasaction = 'ignore')
         conv_writer.writerow(dict(zip(convfields, convfields)))
@@ -234,22 +234,22 @@ def aggregate_results(ifiles, ofile):
     with open(ifiles[0]) as handle:
         iterable = csv.DictReader(handle, delimiter = '\t')
         taxiter = ifilter(lambda x:x['Taxid'] in tax2org, iterable)
-        grouper = itemgetter('Article', 'ParNum', 'SentNum', 'Mutation')
+        grouper = itemgetter('Article', 'ParNum', 'SentNum', 'Mutation', 'ProtText')
         for key, rows in groupby(taxiter, grouper):
             rows = list(rows)
             uni_orgs = set((tax2org[x['Taxid']] for x in rows))
             uni_prots = set((x['Symbol'] for x in rows))
             if len(uni_orgs) == 1 and len(uni_prots) == 1:
-                mut_dict[(uni_orgs.pop(), uni_prots.pop(), key[3])].add(key[0])
+                mut_dict[(uni_orgs.pop(), uni_prots.pop(), key[3], key[4])].add(key[0])
             
 
-    aggfields = ('Organism', 'Symbol', 'Mutation', '#articles', 'Articles')
+    aggfields = ('Organism', 'Symbol', 'Mutation', 'ProtText', '#articles', 'Articles')
     with open(ofile, 'w') as agg_handle:                    
         agg_writer = csv.DictWriter(agg_handle, aggfields, delimiter = '\t', extrasaction = 'ignore')
         agg_writer.writerow(dict(zip(aggfields, aggfields)))
-        for (org, genesym, mut), arts in sorted(mut_dict.iteritems()):
+        for (org, genesym, mut, prot_text), arts in sorted(mut_dict.iteritems()):
             agg_writer.writerow({'Organism':org,'Symbol':genesym, 'Mutation': mut, 
-                                '#articles':len(arts), 
+                                '#articles':len(arts), 'ProtText':prot_text,
                                 'Articles':','.join(arts)})
     
 
