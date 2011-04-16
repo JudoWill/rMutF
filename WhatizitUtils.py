@@ -52,7 +52,7 @@ def ask_whatizit(search_sent_list, client = None, pipeline = 'whatizitSwissprot'
                                         text = sent, 
                                         convertToHtml = False)
         soup = BeautifulStoneSoup(de_safe_xml(resp))
-        groups = soup.findAll(soup.findAll('z:uniprot'))
+        groups = soup.findAll('z:uniprot')
         if groups:
             res = [(p.contents[0], p['ids'].split(',')) for p in groups]
         else:
