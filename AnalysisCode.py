@@ -162,12 +162,13 @@ def process_mut_file(ifile, ofiles):
                             pipeline = 'whatizitSwissprot')
         
         for row, group in izip(rows, iterable):
+            
             if group:
-                prot_text, reslist = group
-                for res in reslist:
-                    row['Swissprot'] = res
-                    row['ProtText'] = prot_text
-                    writer.writerow(row)
+                for prot_text, reslist in group:
+                    for res in reslist:
+                        row['Swissprot'] = res
+                        row['ProtText'] = prot_text
+                        writer.writerow(row)
         GeneralUtils.touch(ofiles[1])
     else:
         for f in ofiles:
