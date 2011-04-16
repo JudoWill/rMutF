@@ -160,11 +160,12 @@ def process_mut_file(ifile, ofiles):
         sent_list = [x['Text'] for x in rows]
         iterable = WhatizitUtils.ask_whatizit(sent_list, 
                             pipeline = 'whatizitSwissprot')
-        for row, (prot_text, reslist) in izip(rows, iterable):
-            for res in reslist:
-                row['Swissprot'] = res
-                row['ProtText'] = prot_text
-                writer.writerow(row)
+        if iterable:
+            for row, (prot_text, reslist) in izip(rows, iterable):
+                for res in reslist:
+                    row['Swissprot'] = res
+                    row['ProtText'] = prot_text
+                    writer.writerow(row)
         GeneralUtils.touch(ofiles[1])
     else:
         for f in ofiles:
