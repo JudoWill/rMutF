@@ -10,7 +10,7 @@ import RunUtils
 import WhatizitUtils
 import UniprotUtils
 import MeshUtils
-
+from HTMLParser import HTMLParseError
 from collections import defaultdict
 
 
@@ -170,17 +170,18 @@ def process_mut_file(ifile, ofiles):
                             pipeline = 'whatizitSwissprot')
         mesh_it = WhatizitUtils.ask_whatizit(sent_list, 
                             pipeline = 'whatizitMeshUp')
-        
-        for row, swiss_group, mesh_group in izip(rows, swiss_it, mesh_it):
-            if swiss_group:
-                meshterms = ','.join(x[1] for x in mesh_group)
-                for prot_text, reslist in swiss_group:
-                    for res in reslist:
-                        row['Swissprot'] = res
-                        row['ProtText'] = prot_text
-                        row['Mesh'] = meshterms
-                        writer.writerow(row)
-    
+        try:
+            for row, swiss_group, mesh_group in izip(rows, swiss_it, mesh_it):
+                if swiss_group:
+                    meshterms = '|'.join(x[1] for x in mesh_group)
+                    for prot_text, reslist in swiss_group:
+                        for res in reslist:
+                            row['Swissprot'] = res
+                            row['ProtText'] = prot_text
+                            row['Mesh'] = meshterms
+                            writer.writerow(row)
+        except HTMLParseError:
+            pass
         GeneralUtils.touch(ofiles[1])
     else:
         for f in ofiles:
@@ -291,7 +292,7 @@ if __name__ == '__main__':
     if args.getmapping:
         ruffus.pipeline_run([download_files])
     else:
-        ruffus.pipeline_run([top_function], multiprocess = 4)
+        ruffus.pipeline_run([process_mut_file], multiprocess = 4)
 
 
 
