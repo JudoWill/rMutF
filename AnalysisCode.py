@@ -158,17 +158,21 @@ def process_mut_file(ifile, ofiles):
         writer = csv.DictWriter(open(ofiles[0], 'w'), ofields, delimiter = '\t')
         writer.writerow(dict(zip(ofields, ofields)))
         sent_list = [x['Text'] for x in rows]
+
         iterable = WhatizitUtils.ask_whatizit(sent_list, 
                             pipeline = 'whatizitSwissprot')
-        
-        for row, group in izip(rows, iterable):
+
+        try:
+            for row, group in izip(rows, iterable):
             
-            if group:
-                for prot_text, reslist in group:
-                    for res in reslist:
-                        row['Swissprot'] = res
-                        row['ProtText'] = prot_text
-                        writer.writerow(row)
+                if group:
+                    for prot_text, reslist in group:
+                        for res in reslist:
+                            row['Swissprot'] = res
+                            row['ProtText'] = prot_text
+                            writer.writerow(row)
+        except:
+            pass
         GeneralUtils.touch(ofiles[1])
     else:
         for f in ofiles:
@@ -243,8 +247,10 @@ def aggregate_results(ifiles, ofile):
             rows = list(rows)
             uni_orgs = set((tax2org[x['Taxid']] for x in rows))
             uni_prots = set((x['Symbol'] for x in rows))
-            if len(uni_orgs) == 1 and len(uni_prots) == 1:
-                mut_dict[(uni_orgs.pop(), uni_prots.pop(), key[3], key[4])].add(key[0])
+            if len(uni_orgs) == 1:
+                uni_org = uni_orgs.pop()
+                for prot in uni_prots:
+                    mut_dict[(uni_org, prot, key[3], key[4])].add(key[0])
             
 
     aggfields = ('Organism', 'Symbol', 'Mutation', 'ProtText', '#articles', 'Articles')

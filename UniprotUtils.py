@@ -34,7 +34,7 @@ def uniprot_to_entrez(uniprot_ids):
     all_ids = sorted(set(uniprot_ids))
     fields = ('ID', 'db', 'value')
     with open('Data/Mapping/idmapping.dat.sort') as handle:
-        ihandle = dropwhile(lambda x: not x.startswith(all_ids[0]), handle)
+        ihandle = dropwhile(lambda x: not x.startswith(all_ids[1]), handle)
         ihandle.next()
         print 'actually reading now'
         iterable = csv.DictReader(handle, fieldnames = fields, delimiter = '\t')
