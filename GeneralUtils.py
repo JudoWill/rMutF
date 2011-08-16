@@ -37,8 +37,9 @@ def download_file(path, url, sort = False):
     with pushd(path):
         cmd = shlex.split('wget -N %s' % url)
         check_call(cmd)
-        cmd = shlex.split('gzip -df %s' % fname+'.gz')
-        check_call(cmd)
+        if path.endswith('.gz'):
+            cmd = shlex.split('gzip -df %s' % fname+'.gz')
+            check_call(cmd)
         if sort:
             ohandle = open(fname + '.sort', 'w')
             ihandle = open(fname)
