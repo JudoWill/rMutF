@@ -75,6 +75,6 @@ def FileIter(func_name):
         items = (('ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/idmapping/idmapping.dat.gz', 'idmapping.dat.sort'),
                     ('ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz', 'gene_info'),
                     ('ftp://ftp.ncbi.nlm.nih.gov/pub/pmc/PMC-ids.csv.gz', 'PMC-ids.csv'),
-                    ('ftp://nlmpubs.nlm.nih.gov/online/mesh/.asciimesh/d2011.bin', 'desc2011.bin'))
+                    ('ftp://nlmpubs.nlm.nih.gov/online/mesh/.asciimesh/d2011.bin', 'd2011.bin'))
         for url, ofile in items:
             yield None, os.path.join(path, ofile), url, path
