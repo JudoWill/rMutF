@@ -9,6 +9,7 @@ import PubmedUtils
 import RunUtils
 import WhatizitUtils
 import UniprotUtils
+import MeshUtils
 
 from collections import defaultdict
 
@@ -37,6 +38,13 @@ def download_files(ifile, ofile, url, path):
     
     GeneralUtils.download_file(path, url, sort = ofile.endswith('.sort'))
     GeneralUtils.touch(ofile)
+
+@ruffus.job_limit(1)
+@ruffus.files('Mapping/d2011.bin', 'Mapping/MeshMapping.txt')
+@ruffus.follows(download_files)
+def convert_mesh_mapping(ifile, ofile):
+    
+    MeshUtils.convert_mesh_mapping(ifile, ofile)
 
 @ruffus.jobs_limit(1)
 @ruffus.follows(search_pubmed)
@@ -164,7 +172,6 @@ def process_mut_file(ifile, ofiles):
 
         try:
             for row, group in izip(rows, iterable):
-            
                 if group:
                     for prot_text, reslist in group:
                         for res in reslist:

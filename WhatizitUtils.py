@@ -1,7 +1,7 @@
 from suds.client import Client
 from BeautifulSoup import BeautifulStoneSoup
 import re
-
+from itertools import chain
 
 
 def de_safe_xml(kinda_xml):
@@ -52,11 +52,19 @@ def ask_whatizit(search_sent_list, client = None, pipeline = 'whatizitSwissprot'
                                         text = sent, 
                                         convertToHtml = False)
         soup = BeautifulStoneSoup(de_safe_xml(resp))
-        groups = soup.findAll('z:uniprot')
-        if groups:
-            res = [(p.contents[0], p['ids'].split(',')) for p in groups]
-        else:
-            res = None
+        if pipeline == 'whatizitSwissProt':
+            groups = soup.findAll('z:uniprot')
+            if groups:
+                res = [(p.contents[0], p['ids'].split(',')) for p in groups]
+            else:
+                res = None
+        elif pipeline == 'whatizitMeshUp':
+            groups = soup.findAll('concepts')
+            if groups:
+                tmp = [x.contents[0].strip() for x in groups]
+                ntmp = [x.split(';') for x in tmp]
+                meshids = set(x.split(':')[0] for x in chain.from_iterable(ntmp))
+                res = [(None, x) for x in sorted(meshids)]
 
         resdict[sent] = res
         yield res
