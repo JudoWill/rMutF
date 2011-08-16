@@ -39,7 +39,7 @@ def download_files(ifile, ofile, url, path):
     GeneralUtils.download_file(path, url, sort = ofile.endswith('.sort'))
     GeneralUtils.touch(ofile)
 
-@ruffus.job_limit(1)
+@ruffus.jobs_limit(1)
 @ruffus.files('Mapping/d2011.bin', 'Mapping/MeshMapping.txt')
 @ruffus.follows(download_files)
 def convert_mesh_mapping(ifile, ofile):
@@ -148,7 +148,6 @@ def get_mutations(ifile, ofile):
     
     PubmedUtils.process_mutation(ifile, ofile)
 
-
 @ruffus.follows(get_mutations)
 @ruffus.files(partial(RunUtils.FileIter, 'process_mut_file'))
 def process_mut_file(ifile, ofiles):
@@ -162,24 +161,26 @@ def process_mut_file(ifile, ofiles):
     with open(ifile) as handle:
         rows = list(csv.DictReader(handle, delimiter = '\t'))
     if rows:
-        ofields = ('ParNum', 'SentNum', 'Mutation', 'Swissprot', 'ProtText', 'Text')
+        ofields = ('ParNum', 'SentNum', 'Mutation', 'Swissprot', 'ProtText', 'Text', 'Mesh')
         writer = csv.DictWriter(open(ofiles[0], 'w'), ofields, delimiter = '\t')
         writer.writerow(dict(zip(ofields, ofields)))
         sent_list = [x['Text'] for x in rows]
 
-        iterable = WhatizitUtils.ask_whatizit(sent_list, 
+        swiss_it = WhatizitUtils.ask_whatizit(sent_list, 
                             pipeline = 'whatizitSwissprot')
-
-        try:
-            for row, group in izip(rows, iterable):
-                if group:
-                    for prot_text, reslist in group:
-                        for res in reslist:
-                            row['Swissprot'] = res
-                            row['ProtText'] = prot_text
-                            writer.writerow(row)
-        except:
-            pass
+        mesh_it = WhatizitUtils.ask_whatizit(sent_list, 
+                            pipeline = 'whatizitMeshUp')
+        
+        for row, swiss_group, mesh_group in izip(rows, swiss_it, mesh_it):
+            if swiss_group:
+                meshterms = ','.join(x[1] for x in mesh_group)
+                for prot_text, reslist in swiss_group:
+                    for res in reslist:
+                        row['Swissprot'] = res
+                        row['ProtText'] = prot_text
+                        row['Mesh'] = meshterms
+                        writer.writerow(row)
+    
         GeneralUtils.touch(ofiles[1])
     else:
         for f in ofiles:
@@ -196,7 +197,7 @@ def merge_results(ifiles, ofiles):
     """
 
     with open(ofiles[0], 'w') as ohandle:
-        ofields = ('Article', 'ParNum', 'SentNum', 'Mutation', 'Swissprot', 'ProtText')
+        ofields = ('Article', 'ParNum', 'SentNum', 'Mutation', 'Swissprot', 'ProtText', 'Mesh')
         writer = csv.DictWriter(ohandle, ofields, delimiter = '\t',
                                     extrasaction = 'ignore')
         writer.writerow(dict(zip(ofields, ofields)))

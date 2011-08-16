@@ -52,7 +52,7 @@ def ask_whatizit(search_sent_list, client = None, pipeline = 'whatizitSwissprot'
                                         text = sent, 
                                         convertToHtml = False)
         soup = BeautifulStoneSoup(de_safe_xml(resp))
-        if pipeline == 'whatizitSwissProt':
+        if pipeline == 'whatizitSwissprot':
             groups = soup.findAll('z:uniprot')
             if groups:
                 res = [(p.contents[0], p['ids'].split(',')) for p in groups]
@@ -65,7 +65,8 @@ def ask_whatizit(search_sent_list, client = None, pipeline = 'whatizitSwissprot'
                 ntmp = [x.split(';') for x in tmp]
                 meshids = set(x.split(':')[0] for x in chain.from_iterable(ntmp))
                 res = [(None, x) for x in sorted(meshids)]
-
+        else:
+            raise KeyError, 'Unknown pipeline: %s' % pipeline
         resdict[sent] = res
         yield res
         
