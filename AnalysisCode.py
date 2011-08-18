@@ -212,7 +212,7 @@ def merge_results(ifiles, ofiles):
     
     GeneralUtils.touch(ofiles[1])    
 
-@ruffus.files(('Data/Mergedresults.txt', 'Data/Mapping/idmapping.dat.sort', 'Data/Mapping/gene_info'), 
+@ruffus.files(('Data/Mergedresults.txt', 'Data/Mapping/idmapping.dat.sort', 'Data/Mapping/gene_info', 'Data/Mapping/Knownmappings.txt'), 
                 'Data/Convertedresults.txt')
 @ruffus.follows(merge_results)
 def convert_results(ifiles, ofile):
@@ -225,8 +225,8 @@ def convert_results(ifiles, ofile):
                                                     uniprot2entrez = uniprot2entrez, 
                                                     with_taxid = True)
     print 'got symbol mapping', len(uniprot2symbol)
-
-    convfields = ('Article', 'ParNum', 'SentNum', 'Mutation', 'Swissprot', 'ProtText', 'GeneID', 'Symbol', 'Taxid')
+    text_normalizer = GeneralUtils.get_known_mappings(ifiles[3])
+    convfields = ('Article', 'ParNum', 'SentNum', 'Mutation', 'Swissprot', 'ProtText', 'GeneID', 'Symbol', 'Taxid', 'Mesh')
     with open(ofile, 'w') as conv_handle:
         conv_writer = csv.DictWriter(conv_handle, convfields, delimiter = '\t', extrasaction = 'ignore')
         conv_writer.writerow(dict(zip(convfields, convfields)))
@@ -236,6 +236,12 @@ def convert_results(ifiles, ofile):
                     row['GeneID'] = geneid
                     row['Symbol'] = genesym[0]
                     row['Taxid'] = genesym[1]
+                    txt = row['ProtText'].lower()
+                    if row['ProtText'].endswith('s'):
+                        txt = txt[:-1]
+                    if txt in text_normalizer:
+                        txt = text_normalizer[txt]
+                    row['ProtText'] = txt
                     conv_writer.writerow(row)
 
 
@@ -292,7 +298,7 @@ if __name__ == '__main__':
     if args.getmapping:
         ruffus.pipeline_run([download_files])
     else:
-        ruffus.pipeline_run([process_mut_file], multiprocess = 4)
+        ruffus.pipeline_run([convert_results], multiprocess = 4)
 
 
 

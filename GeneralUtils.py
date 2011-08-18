@@ -23,6 +23,17 @@ class TimedSemaphore():
     def __exit__(self, typ, value, traceback):
         Timer(self.time, self.release).start()
 
+def get_known_mappings(ifile):
+    
+    mappingdict = {}
+    with open(ifile) as handle:
+        for line in handle:
+            if not line.startswith('#'):
+                parts = line.strip().split('|')
+                for extra in parts[1:]:
+                    mappingdict[extra] = parts[0]
+    return mappingdict
+
 def touch(fname, times = None):
     try:
         with file(fname, 'a'):
