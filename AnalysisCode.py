@@ -2,7 +2,7 @@ import csv, os, os.path, sys
 import ruffus
 import argparse
 from functools import partial
-from itertools import izip, chain, ifilter, groupby
+from itertools import izip, chain, ifilter, groupby, product
 from operator import itemgetter
 import GeneralUtils
 import PubmedUtils
@@ -241,11 +241,12 @@ def convert_results(ifiles, ofile):
                         txt = txt[:-1]
                     if txt in text_normalizer:
                         txt = text_normalizer[txt]
+                        row['Symbol'] = txt
                     row['ProtText'] = txt
                     conv_writer.writerow(row)
 
 
-@ruffus.files(('Data/Convertedresults.txt', 'allowed_taxids.txt'), 
+@ruffus.files(('Data/Convertedresults.txt', 'allowed_taxids.txt', 'Data/Mapping/MeshMapping.txt'), 
                 'Data/AggregatedResults.txt')
 @ruffus.follows(convert_results)
 def aggregate_results(ifiles, ofile):
@@ -261,21 +262,29 @@ def aggregate_results(ifiles, ofile):
         for key, rows in groupby(taxiter, grouper):
             rows = list(rows)
             uni_orgs = set((tax2org[x['Taxid']] for x in rows))
-            uni_prots = set((x['Symbol'] for x in rows))
+            uni_prots = set((x['ProtText'] for x in rows))
+            mesh_joins = '|'.join(x['Mesh'] for x in rows)            
+            uni_mesh = set(mesh_joins.split('|'))
             if len(uni_orgs) == 1:
                 uni_org = uni_orgs.pop()
-                for prot in uni_prots:
-                    mut_dict[(uni_org, prot, key[3], key[4])].add(key[0])
+                for prot, mesh in product(uni_prots, uni_mesh):
+                    mut_dict[(uni_org, prot, key[3], key[4], mesh)].add(key[0])
             
+    with open(ifiles[2]) as handle:
+        meshdict = {}
+        for line in handle:
+            parts = line.strip().split('\t')
+            meshdict[parts[0]] = parts[1]
 
-    aggfields = ('Organism', 'Symbol', 'Mutation', 'ProtText', '#articles', 'Articles')
+    aggfields = ('Organism', 'Symbol', 'Mutation', 'ProtText', 'Mesh', '#articles', 'Articles')
     with open(ofile, 'w') as agg_handle:                    
         agg_writer = csv.DictWriter(agg_handle, aggfields, delimiter = '\t', extrasaction = 'ignore')
         agg_writer.writerow(dict(zip(aggfields, aggfields)))
-        for (org, genesym, mut, prot_text), arts in sorted(mut_dict.iteritems()):
+        for (org, genesym, mut, prot_text, mesh), arts in sorted(mut_dict.iteritems()):
             agg_writer.writerow({'Organism':org,'Symbol':genesym, 'Mutation': mut, 
                                 '#articles':len(arts), 'ProtText':prot_text,
-                                'Articles':','.join(arts)})
+                                'Articles':','.join(arts),
+                                'Mesh':meshdict.get(mesh,mesh)})
     
 
 
@@ -298,7 +307,7 @@ if __name__ == '__main__':
     if args.getmapping:
         ruffus.pipeline_run([download_files])
     else:
-        ruffus.pipeline_run([convert_results], multiprocess = 4)
+        ruffus.pipeline_run([aggregate_results], multiprocess = 4)
 
 
 
